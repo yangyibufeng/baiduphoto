@@ -57,8 +57,9 @@ def getOnePicture(context):
             return
 
 def getWithTimeRange(context):
-    start_time = "2025:10:01"
-    end_time = "2025:11:02"
+    start_time = "2025:10:24"
+    end_time = "2025:10:26"
+    # 获取的范围是[start_time, end_time)
 
     cookie = context["Cookie"]
 
@@ -80,11 +81,11 @@ def getWithTimeRange(context):
     items_list = result['items']
     
     print(f"items count={len(items_list)}")
-    for i, item in enumerate(items_list):
-        print(f"  {i+1}: {item}")
-        print(f"     Info keys: {json.dumps(item.info, indent=4, ensure_ascii=False)}")
-        if i > 2 :
-            break
+    # for i, item in enumerate(items_list):
+    #     print(f"  {i+1}: {item}")
+    #     print(f"     Info keys: {json.dumps(item.info, indent=4, ensure_ascii=False)}")
+    #     if i > 2 :
+    #         break
 
     url = api.get_batchDownloadLink(items_list)
     print(f"url:{url}")
@@ -95,4 +96,4 @@ if __name__ == '__main__':
     start(context)
     # getOnePicture(context)
     getWithTimeRange(context)
-    # pass
+    # pass 'errno': 50506, 'request_id': 64128605431839035

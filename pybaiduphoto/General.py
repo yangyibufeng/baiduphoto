@@ -7,6 +7,8 @@ import hashlib
 import datetime
 import base64
 
+import json
+
 from .cooperation import muyangren907_shoot_time
 
 
@@ -215,6 +217,7 @@ class General:
         funcS = (
             cls.funcS
         )  # fun_s = js2py.eval_js(sign2); notice to import js2py and in requirements
+        print(f"get_sign_by_sign1sign2sign3\nsign1:{sign1}\nsign2:{sign2}\nsign3:{sign3}")
         sign = base64.encodebytes(funcS(sign3, sign1).encode("latin1")).decode()
         return sign
 
@@ -231,7 +234,8 @@ class General:
 
     def getdlLink_batchDonwload(self, items, zipname=None):
         preData = self.batchDonwload_precondition()
-        url = "https://photo.baidu.com/youai/file/v1/batchdownload"
+        # url = "https://photo.baidu.com/youai/file/v1/batchdownload"
+        url = "https://photo.baidu.com/youai/file/v1/batchdownload?clienttype=70&bdstoken=e0bfaedf7a37d6ca6eab48e0146624b5"
         fsid_list = [i.get_fsid() for i in items]
         if zipname is None:
             now = datetime.datetime.now()
@@ -241,9 +245,12 @@ class General:
             "fsid_list": "[{}]".format(",".join(fsid_list)),
             "zipname": zipname,
             "sign": preData["sign"],
+            # "sign": "elAqQniOuKZQ7ZQwi8rx+HKKuz2qJpCOOVAhOJk24UNJAXFf+Qq4aw==",
             "timestamp": preData["timestamp"],
         }
+        print(f"params = {json.dumps(params, indent=4, ensure_ascii=False)}")
         resJson = self.req.getReqJson(url=url, params=params)
+        print(f"resJson = {json.dumps(resJson, indent=4, ensure_ascii=False)}")
         return resJson["dlink"]
 
     def getDownloadZip(self, items, dirPath, zipname=None):

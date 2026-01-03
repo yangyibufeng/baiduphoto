@@ -1,7 +1,12 @@
 from datetime import datetime, date
+import json
+import os
+import time
+
+
 class WithTime:
 
-    def _parse_date_input(self,date_input):
+    def _parse_date_input(self, date_input):
         """解析日期输入为 date 对象
 
         Args:
@@ -31,8 +36,7 @@ class WithTime:
         else:
             raise TypeError(f"不支持的日期类型: {type(date_input)}")
 
-
-    def _get_item_date(self,item):
+    def _get_item_date(self, item):
         """获取 item 的日期(只到天,不含时分秒)
 
         Args:
@@ -51,8 +55,7 @@ class WithTime:
                 return None
         return None
 
-
-    def _binary_search_first_before_date(self,items, end_date):
+    def _binary_search_first_before_date(self, items, end_date):
         """二分查找第一个早于 end_date 的 item 的索引(按日期粒度)
 
         Args:
@@ -84,8 +87,7 @@ class WithTime:
 
         return result
 
-
-    def get_photo_with_end_date_and_count_items(self,SinglePageFunc, end_date, count):
+    def get_photo_with_end_date_and_count_items(self, SinglePageFunc, end_date, count):
         """根据结束日期和数量获取指定数量的 items (按日期粒度,不考虑具体时间)
             结束日期向前数count个
 
@@ -159,8 +161,7 @@ class WithTime:
         # 返回收集到的所有 items(可能少于 count)
         return r[:count] if len(r) >= count else r
 
-
-    def _binary_search_date_range_boundary(self,items, start_date, end_date):
+    def _binary_search_date_range_boundary(self, items, start_date, end_date):
         """在items中找到日期区间的边界索引
 
         Args:
@@ -217,15 +218,15 @@ class WithTime:
         if first_before_start == -1:
             # 所有items都 >= start_date
             # 那么区间就是 [0, end_index]
-            return 0, end_index
+            return 0, end_index  # 修复：返回索引而不是日期对象
+
         else:
             # 区间是 [0, min(first_before_start-1, end_index)]
             if first_before_start - 1 < 0:
                 return -1, -1
             return 0, min(first_before_start - 1, end_index)
 
-
-    def get_photo_with_date_range_items(self,SinglePageFunc, start_date, end_date):
+    def get_photo_with_date_range_items(self, SinglePageFunc, start_date, end_date):
         """获取指定日期区间内的所有 items (按日期粒度)
 
         Args:
@@ -239,10 +240,6 @@ class WithTime:
         Returns:
             list,包含日期在 [start_date, end_date) 区间内的所有 items
         """
-        # ----------------------------------------------------------------
-        # def SinglePageFunc(cursor=None) -> dict:
-        #     return { 'items':[] , "has_more":True/False, "cursor"  }
-        # ----------------------------------------------------------------
         # 解析日期
         start_date = self._parse_date_input(start_date)
         end_date = self._parse_date_input(end_date)
@@ -252,92 +249,76 @@ class WithTime:
 
         cursor = None
         r = []
-        found_start_boundary = False
+        page_number = 0
 
         while True:
             # 获取一页数据
             page = SinglePageFunc(cursor=cursor)
             items = page["items"]
+            page_number += 1
 
             if not items:
                 # 没有更多数据了
                 break
 
-            # 检查第一个 item 的日期(因为是倒序,第一个是最新的)
-            first_item_date = self._get_item_date(items[0])
+            # items是时间倒序的，第一个是最新的，最后是最旧的
+            first_item_date = self._get_item_date(items[0])  # 最新日期
+            last_item_date = self._get_item_date(items[-1])  # 最旧日期
+            print(f"\n========== 第 {page_number} 页 ==========")  # log
+            print(f"页面 items 总数: {len(items)}")  # log
+            print(f"item_begin_data = {last_item_date}")  # log
+            print(f"item_end_data = {first_item_date}")  # log
+            print(f"目标区间: [{start_date}, {end_date})")  # log
 
+            # 情况1: 整个区间都在目标区间之前，即当前区间均早于目标区间 (first_item_date < start_date)
             if first_item_date is not None and first_item_date < start_date:
-                # 第一个item的日期都小于开始日期,说明已经超出范围,停止
+                # 所有items都早于start_date，已经超出范围
+                print(f"所有items都早于start_date，已经超出范围")
                 break
 
-            # 检查最后一个 item 的日期
-            last_item_date = self._get_item_date(items[-1])
-
-            # 判断当前页与区间的关系
+            # 情况2: 整个区间都在目标区间之后，即当前区间均晚于目标区间，需要接着请求获取更早的 (last_item_date >= end_date)
             if last_item_date is not None and last_item_date >= end_date:
-                # 整页都在 end_date 之后(或等于),继续请求下一页
+                # 整页都在目标区间之前，继续下一页
                 if page["has_more"]:
+                    print(f"⏱ 等待 500 毫秒后请求下一页...")  # log
+                    time.sleep(0.5)
                     cursor = page["cursor"]
                 else:
                     break
                 continue
 
-            # 到这里,说明当前页包含了部分或全部区间内的数据
-            # 需要精确找到区间边界
+            # 现在我们知道当前页与目标区间有交集
+            # 遍历items，收集在 [start_date, end_date) 范围内的项目
+            added_count = 0  # 本页新增数量
 
-            # 找到第一个 < end_date 的位置
-            end_boundary = self._binary_search_first_before_date(items, end_date)
+            for item in items:
+                item_date = self._get_item_date(item)
+                if item_date is not None and start_date <= item_date < end_date:
+                    r.append(item)
+                    added_count += 1
 
-            if end_boundary == -1:
-                # 当前页没有 < end_date 的items,继续下一页
-                if page["has_more"]:
-                    cursor = page["cursor"]
-                else:
-                    break
-                continue
-
-            # 找到第一个 < start_date 的位置
-            start_boundary = self._binary_search_first_before_date(items, start_date)
-
-            # 确定要收集的区间
-            # start_boundary 是第一个 < start_date 的位置
-            # [0, start_boundary) 是 >= start_date 的区间
-            # [0, end_boundary] 是 < end_date 的区间
-            # 交集是 [0, min(start_boundary if start_boundary != -1 else len(items), end_boundary+1))
-
-            if start_boundary == -1:
-                # 所有items都 >= start_date
-                # 收集 [0, end_boundary]
-                r.extend(items[0:end_boundary + 1])
-                found_start_boundary = True
-            elif start_boundary == 0:
-                # 第一个item就 < start_date,没有符合条件的
-                break
+            # 打印本页加入情况
+            if added_count > 0:
+                print(f"✓ 本次加入 {added_count} 个 items")
+                print(f"  当前 r 总数: {len(r)}")
             else:
-                # 收集 [0, min(start_boundary, end_boundary+1))
-                collect_end = min(start_boundary, end_boundary + 1)
-                r.extend(items[0:collect_end])
-                found_start_boundary = True
+                print(f"✗ 本页没有符合区间的 items")
 
-                if start_boundary <= end_boundary:
-                    # 已经找到了 start_date 的边界,不需要继续
-                    break
-
-            # 检查是否已经完整覆盖了区间
+            # 如果最后items的日期已经早于start_date，说明后续不会有符合条件的项目了
             if last_item_date is not None and last_item_date < start_date:
-                # 已经超出 start_date,停止
                 break
 
             # 继续下一页
             if page["has_more"]:
                 cursor = page["cursor"]
+                print(f"⏱ 等待 500 毫秒后请求下一页...")  # log
+                time.sleep(0.5)
             else:
                 break
 
         return r
 
-
-    def get_photo_with_end_date_and_count(self,SinglePageFunc, end_date, count):
+    def get_photo_with_end_date_and_count(self, SinglePageFunc, end_date, count):
         """根据结束日期和数量获取指定数量的 items,返回标准数据格式
 
         这是 get_photo_with_end_date_and_count_items 的封装版本,
@@ -364,8 +345,7 @@ class WithTime:
             'cursor': None
         }
 
-
-    def get_photo_with_date_range(self,SinglePageFunc, start_date, end_date):
+    def get_photo_with_date_range(self, SinglePageFunc, start_date, end_date):
         """获取指定日期区间内的所有 items,返回标准数据格式
 
         这是 get_photo_with_date_range_items 的封装版本,
@@ -386,8 +366,23 @@ class WithTime:
                 - cursor: 总是 None
         """
         items = self.get_photo_with_date_range_items(SinglePageFunc, start_date, end_date)
-        return {
+        result = {
             'items': items,
             'has_more': False,
             'cursor': None
         }
+
+        # 生成当前时间戳和文件名
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        start_str = self._parse_date_input(start_date).strftime("%Y-%m-%d")
+        end_str = self._parse_date_input(end_date).strftime("%Y-%m-%d")
+        count = len(items)
+        filename = f"{current_time}_{start_str}_{end_str}_{count}.json"
+
+        # 保存结果到JSON文件
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2, default=str)
+
+        print(f"已将结果保存到文件: {filename}")
+
+        return result
