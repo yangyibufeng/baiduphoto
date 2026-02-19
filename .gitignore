@@ -1,7 +1,64 @@
 
+# Python
+*.py[cod]
+__pycache__/
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+new_venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Environment variables
+.env
+.env.local
+
+# Sensitive configuration
+**/settings.json
+**/cookies.json
+**/config/*.json
+!config/__init__.py
+!config/constants.py
+!config/settings.py
+
+# User data
+pybaiduphoto/yybf/
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Jupyter notebooks
 *.ipynb
 
-test\.py
+# Example scripts (optional, uncomment if you want to exclude them)
+# examples/*.py
 
-\.DS_Store
+# Upload scripts
 upload.py

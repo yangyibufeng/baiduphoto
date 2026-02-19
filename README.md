@@ -1,201 +1,307 @@
 # pybaiduphoto
-一刻相册 API
 
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-# 安装
-```
+百度相册（一刻相册）API 的 Python 库 - 非官方封装，用于程序化访问百度云相册服务。
+
+## 功能特性
+
+- **照片/视频管理**：上传、下载、删除照片和视频
+- **相册操作**：创建、管理、重命名和组织相册
+- **AI 分类相册**：访问自动生成的人物、地点和事物相册
+- **批量操作**：支持批量下载并导出为 ZIP
+- **网盘集成**：从百度网盘导入文件
+- **代理支持**：自定义代理配置用于网络请求
+
+## 安装
+
+```bash
 pip install pybaiduphoto
 ```
 
-# 初始化api
+开发安装（包含浏览器 Cookie 支持）：
 
+```bash
+pip install pybaiduphoto[browser]
 ```
+
+## 快速开始
+
+### 初始化 API
+
+```python
 from pybaiduphoto import API
+
+# 方式 1：使用 browser_cookie3（推荐）
+import browser_cookie3
+api = API(cookies=browser_cookie3.chrome())
+
+# 方式 2：手动提供 Cookies
+cookies = {
+    'BAIDUID': 'YOUR_BAIDUID_HERE',
+    'STOKEN': 'YOUR_STOKEN_HERE',
+    'BDUSS_BFESS': 'YOUR_BDUSS_HERE',
+}
 api = API(cookies=cookies)
 ```
-其中`cookies` 从网页中抠取，如下:
+
+### 基本用法
+
+```python
+# 获取所有照片/视频
+photos = api.get_self_All(typeName='Item')
+print(f"找到 {len(photos)} 张照片")
+
+# 下载第一张照片
+photos[0].download(DirPath='./downloads')
+
+# 创建新相册
+album = api.createNewAlbum(Name='我的假期')
+
+# 添加照片到相册
+album.append(photos[:10])
+
+# 重命名相册
+album.rename('2024年暑假')
+
+# 搜索相册
+results = api.albumSearch(keyword='假期', limit=10)
+for album in results['items']:
+    print(album)
 ```
-cookies = {
-            'BAIDUID': 'F...',
-            '__yjs_duid': '1...',
-            'BIDUPSID': 'FD...',
-            'BDUSS_BFESS': 'lRLNl...',
-            'STOKEN': 'be2...',
-            ...
-        }
+
+### AI 分类相册
+
+```python
+# 人物相册（人脸识别）
+persons = api.get_self_All(typeName='Person')
+for person in persons[:3]:
+    print(f"{person.getName()}: {person.getCount()} 张照片")
+
+# 地点相册
+locations = api.get_self_All(typeName='Location')
+
+# 事物相册（物体识别）
+things = api.get_self_All(typeName='Thing')
 ```
-方便起见，也可以通过`browser_cookie3`(注意自己pip安装一下)直接从浏览器中抽取cookies(注意先登陆)，以chrome为例:
+
+### 上传文件
+
+```python
+# 上传到默认位置
+api.upload_1file(filePath='photo.jpg')
+
+# 上传到指定相册
+album = api.get_self_1page(typeName='Album')['items'][0]
+api.upload_1file(filePath='photo.jpg', album=album)
 ```
-from pybaiduphoto import API
+
+### 批量下载
+
+```python
+# 下载多张照片
+photos = api.get_self_All(typeName='Item')
+download_url = api.get_batchDownloadLink(photos[:20], zipname='my_photos.zip')
+
+print(f"下载链接: {download_url}")
+# 复制链接到浏览器下载 ZIP 文件
+```
+
+### 从百度网盘导入
+
+```python
+# 从百度网盘导入文件夹
+api.importFromPanDisk(dirPath='/我的照片')
+```
+
+## 项目结构
+
+```
+pybaiduphoto/
+├── pybaiduphoto/          # 主包
+│   ├── config/            # 配置文件
+│   │   ├── constants.py   # API 端点和常量
+│   │   └── settings.py    # 运行时设置
+│   ├── API.py             # 主 API 入口
+│   ├── Requests.py        # HTTP 请求处理
+│   ├── General.py         # 工具函数
+│   ├── OnlineItem.py      # 照片/视频对象
+│   ├── Album.py           # 相册对象
+│   ├── Person.py          # 人物相册对象
+│   ├── Location.py        # 地点相册对象
+│   ├── Thing.py           # 事物相册对象
+│   └── apiObject.py       # 所有对象的基类
+├── examples/              # 示例脚本
+│   ├── basic_usage.py
+│   ├── upload_example.py
+│   └── batch_download.py
+├── docs/                  # 文档
+│   ├── ARCHITECTURE.md
+│   └── CONTRIBUTING.md
+├── tests/                 # 测试文件
+└── setup.py              # 包安装
+```
+
+## API 对象
+
+### OnlineItem
+表示百度相册中的照片或视频。
+
+**方法：**
+- `download(DirPath)` - 下载到本地目录
+- `delete()` - 从云端删除
+- `getID()` - 获取文件 ID
+- `getName()` - 获取文件名
+- `getSize()` - 获取文件大小
+- `getMD5()` - 获取 MD5 哈希值
+
+### Album
+表示用户创建的相册。
+
+**方法：**
+- `append(itemObjs)` - 添加项目到相册
+- `deleteItem(items)` - 从相册移除项目
+- `delete(isWithItems)` - 删除相册
+- `rename(newName)` - 重命名相册
+- `setNotice(notice)` - 设置相册公告
+- `get_sub_1page()` - 获取一页相册项目
+- `get_sub_All()` - 获取所有相册项目
+
+### PersonAlbum
+表示基于人脸识别的人物相册。
+
+**方法：**
+- `setName(name)` - 设置人物姓名
+- `rename(newName)` - setName 的别名
+- `getCount()` - 获取照片数量
+- `getctime()` - 获取创建时间
+- `getmtime()` - 获取修改时间
+
+### Location / Thing
+与 PersonAlbum 类似，但用于地点和物体识别。
+
+## 配置
+
+### 环境变量
+
+```bash
+# 设置日志级别
+export PYBAIDUPHOTO_LOG_LEVEL=DEBUG
+
+# 设置代理
+export PYBAIDUPHOTO_ALL_PROXY=socks5://127.0.0.1:1080
+```
+
+### 程序化配置
+
+```python
+# 初始化时设置代理
+api = API(
+    cookies=cookies,
+    proxies={"https": "socks5://127.0.0.1:1080"}
+)
+```
+
+## Cookie 管理
+
+**重要提示**：永远不要将 Cookies 提交到版本控制。使用以下安全方法之一：
+
+1. **browser_cookie3**（推荐）
+```python
 import browser_cookie3
-
-api = API(cookies = browser_cookie3.chrome() )
+api = API(cookies=browser_cookie3.chrome())
 ```
 
-
-# 获取对象
-
-## 数据对象
-数据对象是指图片或者视频。首先要得到对象的列表信息。因为量比较大，所以信息是分页的。获取第一页的方式如下:
-```
-list1 = api.get_self_1page(typeName='Item')
-```
-其返回值包含以下内容：
-```
-list1.keys()
->>
-dict_keys(['items', 'has_more', 'cursor'])
-```
-`items` 是该分页中的对象集合，是一个list。可以直接通过`.info`查看对象的信息:
-```
-L=list1["items"]
-L[0].info
-
->>
-{'fsid': 63.....,
- 'path': '.....',
- 'md5': '49dda......',
-  ...
- 'collect_status': 0}
-```
-友情提示：为保持良好的OOP代码结构，不推荐直接使用`L[0].info`，内容可能会变化。
-
-对象可以直接下载到本地目录:
-```
-L=list1["items"]
-L[0].download(DirPath='/Users/XXXX/Desktop')
-```
-通过`has_more`来判断该页面是否为最后一页。如果不是最后一页，下一页的获得方式为:
-```
-if list1['has_more']:
-    cursor_nextpage = list1['cursor']
-    list2 = api.get_self_1page(typeName='Item',cursor=cursor_nextpage)
-```
-可以删除:
-```
-L[0].delete()
+2. **环境变量**
+```bash
+export PYBAIDUPHOTO_COOKIES="BAIDUID=xxx;STOKEN=xxx;"
 ```
 
-high level函数`get_self_All(typeName='Item',max=-1)`是对`get_self_1page`的一个包装，用于获取所有对象。`max`设定最大获取数量，`max<=0`对应获取全部。例如(注意，内容多的话可能有点慢):
-```
-L = api.get_self_All(typeName='Item')
-```
-则`L[0]`直接就是一个数据对象。
-
-
-
-## 相册对象
-```
-list1 = api.get_self_1page(typeName='Album')
-list1.keys()
->>
-dict_keys(['items', 'has_more', 'cursor'])
-```
-其中`has_more`, `cursor`意义同上。items中的对象是`相册对象`。可以用过`append`将图片添加到相册。例如: 将最后一张照片添加到第一个相册:
-```
-ilist = api.get_self_1page(typeName='Item')
-alist = api.get_self_1page(typeName='Album')  
-a = alist['items'][0]
-a.append( ilist['items'][0]  )
-```
-也可以添加多个对象，`a.append( ilist['items'][0:3]  )`
-
-可以删除该相册:`a.delete()`,默认会删除相册中的子内容。如果只删除相册但是保留子内容，可使用: `a.delete(isWithItems=False)`
-
-获得相册中的对应数据的方法是:
-```
-res = a.get_sub_1page()
-```
-返回相册中对应的数据对象。返回内容的key为`dict_keys(['items', 'has_more', 'cursor'])`。用法同`get_self_1page()`。同时也存在函数`a.get_sub_All(max=-1)`
-
-获取相册的名字或者ID:
-```
-a.getName()
-a.getID()
+3. **安全配置文件**
+```python
+import json
+with open('.env', 'r') as f:
+    cookies = json.load(f)
+api = API(cookies=cookies)
 ```
 
-重命名:
-```
-a.rename(newName)
-```
+将 `.env` 添加到你的 `.gitignore` 文件中。
 
-设置公告:  
-```
-a.setNotice("balabala...")
-```
+## 文档
 
-## 人物相册
-用法参考上面的相册对象，只是把`typeName`设置成`Person`。例如获得所有的人物相册的方式：
-```
-pList = api.get_self_All(typeName='Person')
-```
-该对象类似与相册对象，不过是百度自动按照人脸分类了。函数类似的还有`get_sub_1page`和`get_sub_All`，用法同上。
+- [架构文档](docs/ARCHITECTURE.md) - 内部设计和结构
+- [贡献指南](docs/CONTRIBUTING.md) - 如何为项目做贡献
 
-## 地点相册
-用法同上，设置`typeName='Location'`
+## 示例
 
-## 事物相册
-用法同上，设置`typeName='Thing'`
+查看 [examples](examples/) 目录获取完整的使用示例：
 
+- `basic_usage.py` - 常用操作
+- `upload_example.py` - 文件上传示例
+- `batch_download.py` - 批量下载示例
 
-# API 操作
+## 依赖要求
 
-## 上传文件
+- Python 3.8+
+- requests >= 2.22.0
+- rich >= 10.16.1
 
-```
-api.upload_1file(filePath='/Users/XXXX/Desktop/test.png')
-```
+## 开发
 
-若要上传到指定相册
+```bash
+# 克隆仓库
+git clone https://github.com/HengyueLi/baiduphoto.git
+cd baiduphoto
 
-```
-api.upload_1file(filePath='/Users/XXXX/Desktop/test.png', album=a)
-```
-其中`a`是获取相册列表得到的相册，例如`a=api.get_self_1page(typeName='Album')['items'][0]`。
+# 创建虚拟环境
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-## 创建相册
-创建一个名字为`test`的相册：
-```
-a = api.createNewAlbum(Name='test')
-```
-返回的是相册对象（见上面解释）。!!!注意，可以创建名字相同的相册。另外，此处后台来看会用到一个`tid`的信息，来唯一标识一个相册。我不知道这个是怎么生成的，目前用一个18位的随机数来代替测试可行。但这带来一个未来失效的风险。有聪明的同学可以帮我研究研究这个`tid`从哪里来的。
-
-## 搜索相册
-根据关键词搜索满足条件的相册。
-```
-aList = api.albumSearch(keyword="xxxx"，limit=30,start=0)
-```
-返回值包含`aList.keys()`->`dict_keys(['items', 'has_more'])`. 所有满足条件的相册对象包含在`aList['items']`中。因为这是一个新增加的功能，所以官方应该是内部做了什么标记。很早之前创建的相册搜不到，网页版的也搜索不到，没办法解决。
-
-
-
-## 网络代理
-在初始化对象的时候加入`proxies`字段,例如
-`api = API(cookies = browser_cookie3.chrome() , proxies = {"https":"socks5://127.0.0.1:1080"} )`。`proxies`的格式同`requests`库需求一致。
-
-## 批量下载
-通过`url = api.get_batchDownloadLink(items,zipname=None)`可以获得一个下载地址，复制到浏览器回车可以下载一个zip包。这其中`items`是一个标准的Python list,内容是`数据对象`。注意如果要用参数`zipname`的话，后缀名要加上`.zip`，不然报错。
-
-## 从百度网盘导入
-
-例子:
-
-```
-api.importFromPanDisk(dirPath="/anime")
+# 以开发模式安装
+pip install -e .[dev]
 ```
 
-其中`anime`是百度网盘中的一个文件夹。也可以是更长的路径如`dirPath="/path1/path2/path3"`。该函数本身没有延迟，但是调用完成后需要等待一刻相册后端慢慢传输数据完成。另外官方说了，从网盘导入目前只支持文件夹。
+## 测试
 
+```bash
+# 运行测试
+pytest
 
+# 运行测试并生成覆盖率报告
+pytest --cov=pybaiduphoto
+```
 
+## 免责声明
 
-# Contribution requests
-- ~~批量下载，遇到一些困难，有js比较好的同学可以去[issue](https://github.com/HengyueLi/baiduphoto/issues/4)帮着看看。~~(感谢@foxxorcat)
+本库仅供教育和个人使用。它是百度相册 API 的非官方封装，不隶属于百度也未获百度认可。
 
+**使用风险自负。** 作者不对使用本库可能引起的任何问题负责，包括但不限于：
+- 账户暂停或终止
+- 数据丢失或损坏
+- API 变更导致功能失效
 
+在使用本库之前，请确保你已备份好你的数据。
 
-# 总结
-虽然只在mac上测试了一下，但是应该其他系统也能用。大致看起来能跑通，基本功能可以实现。有各种问题的话再慢慢研究修复。
+## 许可证
 
-# 免责申明
-此脚本（API）仅供学习交流，禁止商业使用。使用软件过程中，发生意外造成的损失由使用者承担。您必须在下载后的24小时内从计算机或其他各种设备中完全删除本项目所有内容。您使用或者复制了以上的任何内容，则视为已接受此声明，请仔细阅读。
+MIT 许可证 - 详情见 [LICENSE](LICENSE) 文件。
+
+## 贡献
+
+欢迎贡献！请参阅 [CONTRIBUTING.md](docs/CONTRIBUTING.md) 获取指南。
+
+## 致谢
+
+- 感谢所有帮助改进本库的贡献者
+- 基于 requests 和 rich 库构建
+
+## 支持
+
+- 通过 [GitHub Issues](https://github.com/HengyueLi/baiduphoto/issues) 报告错误
+- 检查现有问题以了解常见问题
+- 阅读文档获取详细用法
+
+## 更新日志
+
+查看 [CHANGES.txt](CHANGES.txt) 了解版本历史。

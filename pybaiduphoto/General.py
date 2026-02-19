@@ -8,17 +8,20 @@ import datetime
 import base64
 
 from .cooperation import muyangren907_shoot_time
-
-
-# import js2py
 from .Requests import Requests
 
 
 def getAllItemsBySinglePageFunction(SinglePageFunc, max=-1):
-    # ----------------------------------------------------------------
-    # def SinglePageFunc(cursor=None) -> dict:
-    #     return { 'items':[] , "has_more":True/False, "cursor"  }
-    # ----------------------------------------------------------------
+    """
+    Helper function to get all items using a single-page function.
+    
+    Args:
+        SinglePageFunc: Function that takes cursor and returns dict with 'items', 'has_more', 'cursor'
+        max: Maximum number of items to retrieve (-1 for all)
+    
+    Returns:
+        List of all items
+    """
     cursor = None
     r = []
     while True:

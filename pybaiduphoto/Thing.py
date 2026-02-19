@@ -1,14 +1,30 @@
 import logging
 from .OnlineItem import OnlineItem
-from .General import getAllItemsBySinglePageFunction
 from .apiObject import apiObject
+from ..config.constants import API_ENDPOINTS
 
 
 class Thing(apiObject):
+    """
+    Represents a thing-based album in Baidu Photo.
+    
+    These albums are automatically created by Baidu's AI object recognition system.
+    """
+    
     @classmethod
     def get_self_1page(cls, req, cursor=None):
+        """
+        Get one page of thing albums.
+        
+        Args:
+            req: Requests object for making API calls
+            cursor: Pagination cursor (optional)
+        
+        Returns:
+            Dictionary with keys: 'items', 'has_more', 'cursor'
+        """
+        url = API_ENDPOINTS["thing_list"]
         params = {"type": "1", "cursor": cursor}
-        url = "https://photo.baidu.com/youai/iclass/tag/v1/list"
         resD = req.getReqJson(url=url, params=params)
         return {
             "has_more": resD["has_more"] == 1,
@@ -17,11 +33,19 @@ class Thing(apiObject):
         }
 
     def get_sub_1page(self, cursor=None):
-        url = "https://photo.baidu.com/youai/iclass/index/v1/search"
+        """
+        Get one page of photos in this thing album.
+        
+        Args:
+            cursor: Pagination cursor (optional)
+        
+        Returns:
+            Dictionary with keys: 'items', 'has_more', 'cursor'
+        """
+        url = API_ENDPOINTS["thing_list_files"]
         params = {
             "cursor": cursor,
             "tag_id": self.getID(),
-            # 'need_thumbnail': '1',
         }
         resD = self.req.getReqJson(url=url, params=params)
         return {
@@ -30,12 +54,14 @@ class Thing(apiObject):
             "items": [OnlineItem(info=i, req=self.req) for i in resD["list"]],
         }
 
-    def getID(self):
+    def getID(self) -> str:
+        """Get the thing ID."""
         return str(self.info["tag_id"])
 
-    def getName(self):
+    def getName(self) -> str:
+        """Get the thing name."""
         return self.info["tag_name"].replace("/", "_")
 
-    def __repr__(self)->str:
-        prt = f'Thing({self.getName()},{self.getID()})'
-        return prt
+    def __repr__(self) -> str:
+        """String representation of the thing album."""
+        return f'Thing({self.getName()},{self.getID()})'
