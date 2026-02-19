@@ -1,2 +1,3 @@
 requests>=2.22.0
 rich>=10.16.1
+tomli>=2.0.0

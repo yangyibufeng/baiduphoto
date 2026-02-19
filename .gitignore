@@ -44,6 +44,8 @@ htmlcov/
 !config/__init__.py
 !config/constants.py
 !config/settings.py
+myself/download_config.json
+myself/config/download_config.toml
 
 # User data
 pybaiduphoto/yybf/
@@ -62,3 +64,6 @@ pybaiduphoto/yybf/
 
 # Upload scripts
 upload.py
+
+# Personal folder - contains real configuration and scripts
+myself/

@@ -6,6 +6,7 @@ import logging
 import hashlib
 import datetime
 import base64
+from urllib.parse import urlencode
 
 from .cooperation import muyangren907_shoot_time
 from .Requests import Requests
@@ -38,6 +39,7 @@ def getAllItemsBySinglePageFunction(SinglePageFunc, max=-1):
         return r
     else:
         return r[:max]
+
 
 
 
@@ -234,19 +236,50 @@ class General:
 
     def getdlLink_batchDonwload(self, items, zipname=None):
         preData = self.batchDonwload_precondition()
-        url = "https://photo.baidu.com/youai/file/v1/batchdownload"
-        fsid_list = [i.get_fsid() for i in items]
+        base_url = "https://photo.baidu.com/youai/file/v1/batchdownload"
+        fsid_list = [str(i.get_fsid()) for i in items]
         if zipname is None:
             now = datetime.datetime.now()
             zipname = now.strftime("【一刻相册】%H时%M分-批量下载 {} 项.zip").format(len(fsid_list))
+        
+        # 限制每批最多 1000 张
+        if len(fsid_list) > 1000:
+            logging.warning(f"文件数量超过限制 {len(fsid_list)} > 1000，将只下载前 1000 张")
+            fsid_list = fsid_list[:1000]
+        
+        # 输出调试信息
+        logging.info(f"=== 批量下载 URL 生成逻辑 ===")
+        logging.info(f"文件数量: {len(fsid_list)}")
+        logging.info(f"ZIP 文件名: {zipname}")
+        logging.info(f"前 5 个 fsid: {fsid_list[:5]}")
+        logging.info(f"签名长度: {len(preData['sign'])}")
+        logging.info(f"时间戳: {preData['timestamp']}")
+        
+        # 构造参数
         params = {
-            "clienttype": 70,
+            "clienttype": "70",
             "fsid_list": "[{}]".format(",".join(fsid_list)),
             "zipname": zipname,
             "sign": preData["sign"],
             "timestamp": preData["timestamp"],
         }
-        resJson = self.req.getReqJson(url=url, params=params)
+        
+        # 计算参数长度
+        fsid_list_str = params["fsid_list"]
+        params_str = urlencode(params)
+        full_url = f"{base_url}?{params_str}"
+        
+        logging.info(f"fsid_list 参数长度: {len(fsid_list_str)} 字符")
+        logging.info(f"完整 URL 长度: {len(full_url)} 字符")
+        logging.info(f"完整 URL: {full_url}")
+        
+        resJson = self.req.getReqJson(url=base_url, params=params)
+        
+        # 检查返回结果
+        if resJson.get("errno") != 0:
+            logging.error(f"批量下载失败: errno={resJson.get('errno')}, msg={resJson}")
+            raise Exception(f"批量下载失败: {resJson}")
+        
         return resJson["dlink"]
 
     def getDownloadZip(self, items, dirPath, zipname=None):

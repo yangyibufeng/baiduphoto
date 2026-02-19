@@ -2,7 +2,7 @@ import logging
 from typing import Union
 from .OnlineItem import OnlineItem
 from .apiObject import apiObject
-from ..config.constants import API_ENDPOINTS
+from .config.constants import API_ENDPOINTS
 
 
 class PersonAlbum(apiObject):

@@ -2,7 +2,7 @@ import logging
 from typing import Union, List
 from .OnlineItem import OnlineItem
 from .apiObject import apiObject
-from ..config.constants import API_ENDPOINTS, DEFAULT_CLIENT_TYPE
+from .config.constants import API_ENDPOINTS, DEFAULT_CLIENT_TYPE
 
 
 class Album(apiObject):

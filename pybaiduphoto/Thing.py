@@ -1,7 +1,7 @@
 import logging
 from .OnlineItem import OnlineItem
 from .apiObject import apiObject
-from ..config.constants import API_ENDPOINTS
+from .config.constants import API_ENDPOINTS
 
 
 class Thing(apiObject):

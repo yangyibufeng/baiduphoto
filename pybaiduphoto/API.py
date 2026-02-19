@@ -33,18 +33,18 @@ class ImportFromNDisk:
     def listPath(self, path: str):
         """
         List directories in Baidu NetDisk.
-        
+
         Args:
             path: Path to list
-        
+
         Returns:
             List of directory information
-        
+
         Raises:
             Exception: If API call fails
         """
-        from ..config.constants import API_ENDPOINTS
-        
+        from .config.constants import API_ENDPOINTS
+
         url = API_ENDPOINTS["netdisk_list"]
         params = {"path": path}
         res = self.req.getReqJson(url=url, params=params)
@@ -57,15 +57,15 @@ class ImportFromNDisk:
     def importDirByfsid(self, fsid):
         """
         Import directory by fsid.
-        
+
         Args:
             fsid: File system ID of the directory
-        
+
         Returns:
             API response
         """
-        from ..config.constants import API_ENDPOINTS
-        
+        from .config.constants import API_ENDPOINTS
+
         url = API_ENDPOINTS["netdisk_import"]
         params = {
             "type": 2,
@@ -147,15 +147,15 @@ class API:
     def getObjectClass(name):
         """
         Get the class for a given object type.
-        
+
         Args:
             name: Object type name ('Item', 'Album', 'Person', 'Location', 'Thing')
-        
+
         Returns:
             Corresponding class or None if not found
         """
-        from ..config.constants import OBJECT_TYPES
-        
+        from .config.constants import OBJECT_TYPES
+
         table = {
             "Item": OnlineItem,
             "Album": Album,
@@ -227,16 +227,16 @@ class API:
     def getAlbumList(self, limit=30, cursor=None):
         """
         Get a list of albums.
-        
+
         Args:
             limit: Maximum number of albums to retrieve
             cursor: Pagination cursor (optional)
-        
+
         Returns:
             Dictionary with keys: 'items', 'has_more', 'cursor'
         """
-        from ..config.constants import API_ENDPOINTS, DEFAULT_CLIENT_TYPE
-        
+        from .config.constants import API_ENDPOINTS, DEFAULT_CLIENT_TYPE
+
         url = API_ENDPOINTS["album_list"]
         params = {
             "clienttype": DEFAULT_CLIENT_TYPE,
@@ -332,15 +332,15 @@ class API:
     def getAlbum_ByID(self, ID):
         """
         Get an album by its ID.
-        
+
         Args:
             ID: Album ID
-        
+
         Returns:
             Album object or None if not found
         """
-        from ..config.constants import API_ENDPOINTS
-        
+        from .config.constants import API_ENDPOINTS
+
         params = {
             "album_id": str(ID),
         }
@@ -356,15 +356,15 @@ class API:
     def getPersonList_Onepage(self):
         """
         Get one page of person albums.
-        
+
         Note: Currently kept as internal function. Cursor may be needed
         when number of persons increases.
-        
+
         Returns:
             List of PersonAlbum objects
         """
-        from ..config.constants import API_ENDPOINTS
-        
+        from .config.constants import API_ENDPOINTS
+
         url = API_ENDPOINTS["person_list"]
         params = {
             "ishidden": "0",
@@ -384,17 +384,17 @@ class API:
     def albumSearch(self, keyword, limit=30, start=0):
         """
         Search for albums by keyword.
-        
+
         Args:
             keyword: Search keyword
             limit: Maximum number of results (default: 30)
             start: Starting offset (default: 0)
-        
+
         Returns:
             Dictionary with keys: 'items', 'has_more'
         """
-        from ..config.constants import API_ENDPOINTS
-        
+        from .config.constants import API_ENDPOINTS
+
         R = {"items": [], "has_more": False}
         params = {
             "keyword": keyword,

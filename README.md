@@ -183,17 +183,85 @@ pybaiduphoto/
 
 ## 配置
 
-### 环境变量
+### 日志系统
 
-```bash
-# 设置日志级别
-export PYBAIDUPHOTO_LOG_LEVEL=DEBUG
+pybaiduphoto 提供了完善的日志系统，支持控制台和文件输出，便于调试和问题排查。
 
-# 设置代理
-export PYBAIDUPHOTO_ALL_PROXY=socks5://127.0.0.1:1080
+#### 快速配置
+
+```python
+from pybaiduphoto.config.settings import setup_file_logging
+
+# 开发环境：文件 + 控制台输出
+setup_file_logging(log_level="DEBUG")
+
+# 生产环境：仅文件输出
+setup_production_logging(log_level="WARNING")
+
+# 简单配置：仅控制台输出
+setup_simple_logging(log_level="INFO")
 ```
 
-### 程序化配置
+#### 自定义配置
+
+```python
+from pybaiduphoto.config.settings import setup_logging
+
+setup_logging(
+    level=logging.DEBUG,           # 日志级别
+    log_to_file=True,             # 是否输出到文件
+    log_file="my_app.log",        # 日志文件名
+    log_dir="logs",               # 日志目录
+    console_output=True,          # 是否输出到控制台
+    detailed_format=True,         # 是否使用详细格式
+    rotation_mode="size"          # 轮转模式：size 或 time
+)
+```
+
+#### 环境变量配置
+
+```bash
+# 日志级别
+PYBAIDUPHOTO_LOG_LEVEL=DEBUG
+
+# 日志文件
+PYBAIDUPHOTO_LOG_TO_FILE=true
+PYBAIDUPHOTO_LOG_FILE=pybaiduphoto.log
+PYBAIDUPHOTO_LOG_DIR=logs
+
+# 控制台输出
+PYBAIDUPHOTO_CONSOLE_OUTPUT=true
+
+# 详细格式（包含文件名和行号）
+PYBAIDUPHOTO_DETAILED_FORMAT=false
+
+# 日志轮转模式
+PYBAIDUPHOTO_LOG_ROTATION=size
+```
+
+#### 日志特性
+
+- **文件轮转**：支持按大小（10MB）或按时间（每天）轮转
+- **备份管理**：自动保留 5 个备份文件
+- **格式化**：提供基本格式和详细格式两种选择
+- **多输出**：同时支持控制台和文件输出
+
+详细使用示例请查看 [examples/logging_example.py](examples/logging_example.py)
+
+### 代理配置
+
+#### 环境变量
+
+```bash
+# 统一代理
+export PYBAIDUPHOTO_ALL_PROXY=socks5://127.0.0.1:1080
+
+# 分别配置
+export PYBAIDUPHOTO_HTTP_PROXY=http://127.0.0.1:8080
+export PYBAIDUPHOTO_HTTPS_PROXY=https://127.0.0.1:8443
+```
+
+#### 程序化配置
 
 ```python
 # 初始化时设置代理

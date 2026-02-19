@@ -1,7 +1,9 @@
 from abc import abstractmethod
-from typing import Dict, List, Optional, Callable, Any
-from .OnlineItem import OnlineItem
+from typing import Dict, List, Optional, Callable, Any, TYPE_CHECKING
 from .General import getAllItemsBySinglePageFunction
+
+if TYPE_CHECKING:
+    from .OnlineItem import OnlineItem
 
 
 class apiObject:
@@ -97,23 +99,26 @@ class apiObject:
     ) -> Dict[str, Any]:
         """
         Common method for getting sub-items with pagination.
-        
+
         This eliminates code duplication across Album, Person, Location, Thing classes.
-        
+
         Args:
             url: API endpoint URL
             params: Query parameters (will have cursor added if provided)
             req: Requests object for making API calls
             cursor: Pagination cursor (optional)
-        
+
         Returns:
             Dictionary with keys: 'items', 'has_more', 'cursor'
         """
+        # 延迟导入以避免循环依赖
+        from .OnlineItem import OnlineItem
+
         if cursor:
             params["cursor"] = cursor
-        
+
         resD = req.getReqJson(url=url, params=params)
-        
+
         return {
             "has_more": resD["has_more"] == 1,
             "cursor": resD.get("cursor", ""),

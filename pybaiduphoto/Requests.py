@@ -100,19 +100,33 @@ class Requests:
         return req
 
     def getReqJson(self, url, **kwargs):
-        data = self.get(url, **kwargs).json()
+        response = self.get(url, **kwargs)
+        try:
+            data = response.json()
+        except Exception as e:
+            logging.error(f"JSON 解析失败: {e}")
+            logging.error(f"响应状态码: {response.status_code}")
+            logging.error(f"响应内容: {response.text[:500]}")
+            raise Exception(f"API 返回的不是有效的 JSON 格式: {response.text[:200]}")
+        
         if data["errno"] == 0:
             return data
         else:
             logging.error("request return error, return = {}".format(data))
             return data
-        return
 
     def postReqJson(self, url, **kwargs):
-        data = self.post(url, **kwargs).json()
+        response = self.post(url, **kwargs)
+        try:
+            data = response.json()
+        except Exception as e:
+            logging.error(f"JSON 解析失败: {e}")
+            logging.error(f"响应状态码: {response.status_code}")
+            logging.error(f"响应内容: {response.text[:500]}")
+            raise Exception(f"API 返回的不是有效的 JSON 格式: {response.text[:200]}")
+        
         if data["errno"] == 0:
             return data
         else:
             logging.error("request return error, return = {}".format(data))
             return data
-        return
